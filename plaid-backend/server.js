@@ -11,7 +11,14 @@ app.use(cors({
   methods: ['GET', 'POST'],
   allowedHeaders: ['Content-Type'],
 }));
+const admin = require('firebase-admin');
+const serviceAccount = require('./purple-budget-firebase-adminsdk-fbsvc-1979621af8.json'); // Path to your Firebase private key
 
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+});
+
+const db = admin.firestore();
 app.use(bodyParser.json());
 app.use((req, res, next) => {
   res.header('Content-Type', 'application/json'); // Force JSON response
@@ -68,50 +75,48 @@ app.post('/create_link_token', async (req, res) => {
 // Route to Exchange Public Token for Access Token
 app.post('/exchange_public_token', async (req, res) => {
   try {
-    const { public_token } = req.body;
+    const { public_token, userId } = req.body; // Accept userId from frontend
     const response = await plaidClient.itemPublicTokenExchange({ public_token });
 
-    req.session.access_token = response.data.access_token; // Store securely
-    req.session.item_id = response.data.item_id;
+    const accessToken = response.data.access_token;
+    const itemId = response.data.item_id;
 
-    console.log("✅ Access Token Response:", response.data);
-    res.json({ access_token: response.data.access_token, item_id: response.data.item_id });
+    // 🔥 Save access token in Firestore under the user's document
+    await db.collection('plaid_tokens').doc(userId).set({
+      access_token: accessToken,
+      item_id: itemId,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    console.log(`✅ Access token stored for user ${userId}`);
+    res.json({ success: true, message: 'Access token saved successfully' });
   } catch (error) {
-    console.error("❌ Error exchanging token:", error.response?.data || error);
-    res.status(500).json({ error: 'Failed to exchange token' });
+    console.error("❌ Error exchanging public token:", error.response?.data || error);
+    res.status(500).json({ error: 'Failed to exchange public token' });
   }
 });
 
 // Route to Fetch Transactions
 app.get('/transactions', async (req, res) => {
-  const accessToken = req.session.access_token;
-  let cursor = null; // Initialize cursor to null for the first sync
-  let added = [];
-  let modified = [];
-  let removed = [];
-  let hasMore = true;
-
   try {
-    while (hasMore) {
-      const request = {
-        access_token: accessToken,
-        cursor: cursor,
-      };
-      const response = await plaidClient.transactionsSync(request);
-      const data = response.data;
+    const { userId } = req.query; // Get userId from frontend
 
-      // Accumulate the changes
-      added = added.concat(data.added);
-      modified = modified.concat(data.modified);
-      removed = removed.concat(data.removed);
-      hasMore = data.has_more;
-      cursor = data.next_cursor;
+    // 🔥 Fetch the stored access token from Firestore
+    const doc = await db.collection('plaid_tokens').doc(userId).get();
+    if (!doc.exists) {
+      return res.status(400).json({ error: 'No access token found for this user.' });
     }
+    const accessToken = doc.data().access_token;
 
-    // Process the added, modified, and removed transactions as needed
-    res.json({ added, modified, removed });
+    // Fetch transactions from Plaid
+    const response = await plaidClient.transactionsSync({
+      access_token: accessToken,
+    });
+
+    console.log("✅ Transactions Retrieved:", response.data.transactions);
+    res.json(response.data.transactions);
   } catch (error) {
-    console.error('Error fetching transactions:', error);
+    console.error("❌ Error fetching transactions:", error.response?.data || error);
     res.status(500).json({ error: 'Failed to fetch transactions' });
   }
 });

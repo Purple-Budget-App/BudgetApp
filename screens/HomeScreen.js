@@ -1,14 +1,19 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, Button, Alert, FlatList, Platform } from 'react-native';
+import { View, Text, Button, Alert, FlatList } from 'react-native';
 import { signOut, getCurrentUser } from '../firebaseConfig';
 import { create, open, dismissLink, LinkIOSPresentationStyle, LinkLogLevel } from 'react-native-plaid-link-sdk';
+
+// Firebase Firestore Import
+import { getFirestore, doc, getDoc } from "firebase/firestore";
 
 const HomeScreen = ({ navigation }) => {
   const user = getCurrentUser();
   const [linkToken, setLinkToken] = useState(null);
   const [accessToken, setAccessToken] = useState(null);
   const [transactions, setTransactions] = useState([]);
-  const address = Platform.OS === 'ios' ? 'localhost' : '10.0.2.2';
+  const address = 'https://plaid-backend-production.up.railway.app';
+  const userId = user?.uid;
+  const db = getFirestore();
 
   // Logout function
   const handleLogout = async () => {
@@ -16,21 +21,48 @@ const HomeScreen = ({ navigation }) => {
     navigation.replace('Auth');
   };
 
-  // Function to fetch link token
+  // Fetch stored access token from Firestore
+  const fetchStoredAccessToken = useCallback(async () => {
+    if (!userId) return;
+    
+    try {
+      const tokenRef = doc(db, "plaid_tokens", userId);
+      const tokenSnap = await getDoc(tokenRef);
+
+      if (tokenSnap.exists()) {
+        console.log("✅ Retrieved Access Token from Firestore:", tokenSnap.data().access_token);
+        setAccessToken(tokenSnap.data().access_token);
+      } else {
+        console.log("❌ No Access Token Found in Firestore");
+      }
+    } catch (error) {
+      console.error("❌ Error fetching stored access token:", error);
+    }
+  }, [userId, db]);
+
+  // Fetch link token
   const createLinkToken = useCallback(async () => {
     try {
-      const response = await fetch(`http://${address}:5000/create_link_token`, {
+      const response = await fetch(`${address}/create_link_token`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ address }),
       });
 
       const data = await response.json();
+      if (!data.link_token) throw new Error("Invalid Plaid Link Token");
+
+      console.log("✅ Link Token:", data.link_token);
       setLinkToken(data.link_token);
     } catch (error) {
-      console.error("Error fetching Plaid link token:", error);
+      console.error("❌ Error fetching Plaid link token:", error);
+      Alert.alert("Error", "Could not fetch Plaid Link Token.");
     }
   }, []);
+
+  // Fetch access token from Firestore when component mounts
+  useEffect(() => {
+    fetchStoredAccessToken();
+  }, [fetchStoredAccessToken]);
 
   // Fetch link token on mount
   useEffect(() => {
@@ -39,25 +71,33 @@ const HomeScreen = ({ navigation }) => {
     } else {
       create({ token: linkToken });
     }
-  });
+  }, [linkToken]);
 
   // Configure Link Open Props
   const createLinkOpenProps = () => ({
     onSuccess: async (success) => {
-      console.log("Plaid Success:", success.publicToken);
+      console.log("✅ Plaid Success:", success.publicToken);
 
       try {
-        const response = await fetch(`http://${address}:5000/exchange_public_token`, {
+        const response = await fetch(`${address}/exchange_public_token`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ public_token: success.publicToken }),
+          body: JSON.stringify({
+            public_token: success.publicToken,
+            userId: userId, // ✅ Send userId to store tokens in Firestore
+          }),
         });
 
         const data = await response.json();
-        setAccessToken(data.access_token);
-        Alert.alert("Success", "Bank Linked Successfully!");
+        if (data.success) {
+          setAccessToken(data.access_token);
+          Alert.alert("Success", "Bank Linked Successfully!");
+        } else {
+          throw new Error("Failed to save access token.");
+        }
       } catch (error) {
-        console.error("Error exchanging public token:", error);
+        console.error("❌ Error exchanging public token:", error);
+        Alert.alert("Error", "Could not exchange public token.");
       }
     },
     onExit: (linkExit) => {
@@ -70,27 +110,34 @@ const HomeScreen = ({ navigation }) => {
 
   // Open Plaid Link
   const handleOpenLink = () => {
+    if (!linkToken) {
+      Alert.alert("Error", "No Plaid Link Token available.");
+      return;
+    }
     open(createLinkOpenProps());
   };
 
   // Fetch Transactions
   const fetchTransactions = async () => {
-    if (!accessToken) {
+    if (!userId || !accessToken) {
       Alert.alert("Error", "No access token available.");
       return;
     }
 
     try {
-      const response = await fetch(`http://${address}:5000/get_transactions`, {
-        method: "POST",
+      const response = await fetch(`${address}/transactions?userId=${userId}`, {
+        method: "GET",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ access_token: accessToken }),
       });
 
       const data = await response.json();
+      if (data.error) throw new Error(data.error);
+
+      console.log("✅ Transactions Retrieved:", data);
       setTransactions(data);
     } catch (error) {
-      console.error("Error fetching transactions:", error);
+      console.error("❌ Error fetching transactions:", error);
+      Alert.alert("Error", "Could not fetch transactions.");
     }
   };
 
