@@ -60,7 +60,7 @@ const AuthScreen = ({ navigation }) => {
             setLoading(false);
 
             if (result.success) {
-              navigation.replace('Home');
+              navigation.replace('MainTabs');
             } else {
               Alert.alert('Google Sign-In Error', result.error || 'Something went wrong with Google Sign-In');
             }
@@ -68,7 +68,7 @@ const AuthScreen = ({ navigation }) => {
             <Text style={styles.linkText}>Sign in with Google</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={() => navigation.navigate('SignUpScreen')}>
+          <TouchableOpacity onPress={() => navigation.replace('SignUpScreen')}>
             <Text style={styles.linkText}>Don't have an account? Sign Up</Text>
           </TouchableOpacity>
         </>

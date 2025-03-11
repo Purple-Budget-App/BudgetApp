@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Button, Alert } from 'react-native';
-import { signUp } from '../utils/firebaseConfig';
+import { signUp } from '../../firebaseConfig';
 
 const SignUpScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
@@ -11,7 +11,7 @@ const SignUpScreen = ({ navigation }) => {
     try {
       await signUp(email, password);
       Alert.alert('Account Created!', 'You can now login.');
-      navigation.replace('Login');
+      navigation.replace('MainTabs');
     } catch (error){
       Alert.alert('Error', error.message);
     };
@@ -48,7 +48,7 @@ const SignUpScreen = ({ navigation }) => {
         <Text style={styles.buttonText}>Sign Up</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => navigation.goBack()}>
+      <TouchableOpacity onPress={() => navigation.replace('Auth')}>
         <Text style={styles.loginText}>Already have an account? Log In</Text>
       </TouchableOpacity>
     </View>
