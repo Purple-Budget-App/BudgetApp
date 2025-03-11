@@ -15,25 +15,6 @@ const AuthScreen = ({ navigation }) => {
     if (result.success) {
       navigation.replace('MainTabs');
     } else {
-      Alert.alert('Error', result.error);
-    }
-  };
-
-  const handleSignUp = async () => {
-    const result = await signUp(email, password);
-    if (result.success) {
-      navigation.replace('MainTabs');
-    } else {
-      Alert.alert('Error', result.error);
-    }
-
-    setLoading(true);
-    const result = await signIn(email, password);
-    setLoading(false);
-
-    if (result.success) {
-      navigation.replace('MainTabs');
-    } else {
       Alert.alert('Error', result.error || 'Sign-In Failed');
     }
   };

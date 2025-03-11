@@ -6,6 +6,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import HomeScreen from '../screens/HomeScreen';
 import AnalyticsScreen from '../screens/AnalyticsScreen';
 import AuthScreen from '../screens/AuthScreen';
+import SignUpScreen from '../screens/SignUpScreen';
 import auth from '@react-native-firebase/auth'; // ✅ Import Firebase Auth
 
 const Stack = createStackNavigator();
