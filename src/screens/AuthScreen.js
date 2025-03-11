@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert } from 'react-native';
-import { signInWithGoogle, signOut, signIn, signUp } from '../firebaseConfig';
+import { signInWithGoogle, signOut, signIn, signUp } from '../../firebaseConfig';
 
 const AuthScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
@@ -9,7 +9,7 @@ const AuthScreen = ({ navigation }) => {
   const handleSignIn = async () => {
     const result = await signIn(email, password);
     if (result.success) {
-      navigation.replace('Home');
+      navigation.replace('MainTabs');
     } else {
       Alert.alert('Error', result.error);
     }
@@ -18,7 +18,7 @@ const AuthScreen = ({ navigation }) => {
   const handleSignUp = async () => {
     const result = await signUp(email, password);
     if (result.success) {
-      navigation.replace('Home');
+      navigation.replace('MainTabs');
     } else {
       Alert.alert('Error', result.error);
     }
@@ -27,7 +27,7 @@ const AuthScreen = ({ navigation }) => {
   const handleGoogleSignIn = async () => {
     const result = await signInWithGoogle();
     if (result.success) {
-      navigation.replace('Home');
+      navigation.replace('MainTabs');
     } else {
       Alert.alert('Google Sign-In Error', result.error);
     }

@@ -17,7 +17,10 @@ react {
     // codegenDir = file("../../node_modules/@react-native/codegen")
     //   The cli.js file which is the React Native CLI entrypoint. Default is ../../node_modules/react-native/cli.js
     // cliFile = file("../../node_modules/react-native/cli.js")
-
+    project.ext.vectoricons = [
+      iconFontNames: ['Ionicons.ttf','MaterialCommunityIcons.ttf', 'FontAwesome.ttf', 'AntDesign.ttf'] // Add other font files as needed
+]
+apply from: "../../node_modules/react-native-vector-icons/fonts.gradle"
     /* Variants */
     //   The list of variants to that are debuggable. For those we're going to
     //   skip the bundling of the JS bundle and the assets. By default is just 'debug'.
