@@ -148,6 +148,27 @@ const HomeScreen = ({ navigation }) => {
       Alert.alert("Error", "Could not fetch transactions.");
     }
   };
+  const [balance, setBalance] = useState(null);
+
+// Fetch Balance
+const fetchBalance = async () => {
+  if (!user?.uid) {
+    Alert.alert("Error", "User ID is missing.");
+    return;
+  }
+
+  try {
+    const response = await fetch(`https://plaid-backend-production.up.railway.app/balance?userId=${user.uid}`, {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+    });
+
+    const data = await response.json();
+    setBalance(data);
+  } catch (error) {
+    console.error("Error fetching balance:", error);
+  }
+};
 
   return (
     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
@@ -163,7 +184,21 @@ const HomeScreen = ({ navigation }) => {
           <Button title="Get Transactions" onPress={fetchTransactions} />
         </>
       )}
+      <Button title="Get Balance" onPress={fetchBalance} />
 
+      {balance && (
+        <FlatList
+          data={balance}
+          keyExtractor={(item) => item.account_id}
+          renderItem={({ item }) => (
+            <View style={{ padding: 10, borderBottomWidth: 1, borderBottomColor: "#ddd" }}>
+              <Text style={{ fontSize: 16, fontWeight: 'bold' }}>{item.name}</Text>
+              <Text>Available: ${item.balances.available?.toFixed(2) || 'N/A'}</Text>
+              <Text>Current: ${item.balances.current?.toFixed(2) || 'N/A'}</Text>
+            </View>
+          )}
+  />
+)}
       {/* Display Transactions */}
       {transactions.length > 0 && (
         <FlatList

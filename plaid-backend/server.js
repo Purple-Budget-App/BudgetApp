@@ -42,7 +42,7 @@ const formatDate = (date) => date.toISOString().split('T')[0]; // YYYY-MM-DD
 // Initialize Plaid Client
 const plaidClient = new PlaidApi(
   new Configuration({
-    basePath: PlaidEnvironments.production, // Change to 'sandbox' or 'production' as needed
+    basePath: PlaidEnvironments[process.env.PLAID_ENV],
     baseOptions: {
       headers: {
         'PLAID-CLIENT-ID': process.env.PLAID_CLIENT_ID,
@@ -52,7 +52,9 @@ const plaidClient = new PlaidApi(
     },
   })
 );
-
+console.log("PLAID_CLIENT_ID:", process.env.PLAID_CLIENT_ID);
+console.log("PLAID_SECRET:", process.env.PLAID_SECRET);
+console.log("PLAID_ENV:", process.env.PLAID_ENV);
 // Route to Create Plaid Link Token
 app.post('/create_link_token', async (req, res) => {
   try {
@@ -93,6 +95,30 @@ app.post('/exchange_public_token', async (req, res) => {
   } catch (error) {
     console.error("Error exchanging public token:", error.response?.data || error);
     res.status(500).json({ error: 'Failed to exchange public token' });
+  }
+});
+
+app.get('/balance', async (req, res) => {
+  try {
+    const { userId } = req.query; // Get user ID from frontend
+
+    // Fetch the stored access token from Firestore
+    const doc = await db.collection('plaid_tokens').doc(userId).get();
+    if (!doc.exists) {
+      return res.status(400).json({ error: 'No access token found for this user.' });
+    }
+    const accessToken = doc.data().access_token;
+
+    // Call Plaid API to get balance
+    const response = await plaidClient.accountsBalanceGet({
+      access_token: accessToken,
+    });
+
+    console.log("Balance Retrieved:", response.data.accounts);
+    res.json(response.data.accounts);
+  } catch (error) {
+    console.error("Error fetching balance:", error.response?.data || error);
+    res.status(500).json({ error: 'Failed to fetch balance' });
   }
 });
 
