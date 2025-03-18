@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, Button, Alert, FlatList } from 'react-native';
-import { signOut, getCurrentUser } from '../firebaseConfig';
+import { signOut, getCurrentUser } from '../../firebaseConfig';
 import { create, open, dismissLink, LinkIOSPresentationStyle, LinkLogLevel } from 'react-native-plaid-link-sdk';
 
 // Firebase Firestore Import
@@ -17,8 +17,16 @@ const HomeScreen = ({ navigation }) => {
 
   // Logout function
   const handleLogout = async () => {
-    await signOut();
-    navigation.replace('Auth');
+    try {
+      await signOut();
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Auth' }], // ✅ Ensure AuthScreen is the only active screen
+      });
+    } catch (error) {
+      console.error('❌ Logout Error:', error);
+      Alert.alert('Logout Failed', error.message);
+    }
   };
 
   // Fetch stored access token from Firestore
