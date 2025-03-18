@@ -184,15 +184,16 @@ const fetchBalance = async () => {
           <Button title="Get Transactions" onPress={fetchTransactions} />
         </>
       )}
-      <Button title="Get Balance" onPress={fetchBalance} />
-
+      <View style={{marginTop:20}}>
+      <Button title="Get Balance"  onPress={fetchBalance} />
+      </View>
       {balance && (
         <FlatList
           data={balance}
           keyExtractor={(item) => item.account_id}
           renderItem={({ item }) => (
             <View style={{ padding: 10, borderBottomWidth: 1, borderBottomColor: "#ddd" }}>
-              <Text style={{ fontSize: 16, fontWeight: 'bold' }}>{item.name}</Text>
+              <Text style={{ marginTop: 20, fontSize: 16, fontWeight: 'bold' }}>{item.name}</Text>
               <Text>Available: ${item.balances.available?.toFixed(2) || 'N/A'}</Text>
               <Text>Current: ${item.balances.current?.toFixed(2) || 'N/A'}</Text>
             </View>
