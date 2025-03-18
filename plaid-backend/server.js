@@ -123,7 +123,7 @@ app.get('/balance', async (req, res) => {
 });
 
 // Route to Fetch Transactions
-app.get('/transactions', async (req, res) => {
+app.get('/transactions/sync', async (req, res) => {
   try {
     const { userId } = req.query; // Get userId from frontend
 

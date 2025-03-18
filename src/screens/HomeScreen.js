@@ -14,6 +14,7 @@ const HomeScreen = ({ navigation }) => {
   const address = 'https://plaid-backend-production.up.railway.app';
   const userId = user?.uid;
   const db = getFirestore();
+  const [showTransactionsButton, setShowTransactionsButton] = useState(false);
 
   // Logout function
   const handleLogout = async () => {
@@ -21,10 +22,10 @@ const HomeScreen = ({ navigation }) => {
       await signOut();
       navigation.reset({
         index: 0,
-        routes: [{ name: 'Auth' }], // ✅ Ensure AuthScreen is the only active screen
+        routes: [{ name: 'Auth' }], //Ensure AuthScreen is the only active screen
       });
     } catch (error) {
-      console.error('❌ Logout Error:', error);
+      console.error('Logout Error:', error);
       Alert.alert('Logout Failed', error.message);
     }
   };
@@ -38,7 +39,7 @@ const HomeScreen = ({ navigation }) => {
       const tokenSnap = await getDoc(tokenRef);
 
       if (tokenSnap.exists()) {
-        console.log("✅ Retrieved Access Token from Firestore:", tokenSnap.data().access_token);
+        console.log("Retrieved Access Token from Firestore:", tokenSnap.data().access_token);
         setAccessToken(tokenSnap.data().access_token);
       } else {
         console.log("No Access Token Found in Firestore");
@@ -72,15 +73,15 @@ const HomeScreen = ({ navigation }) => {
     fetchStoredAccessToken();
   }, [fetchStoredAccessToken]);
 
-  // Fetch link token on mount
-  useEffect(() => {
-    if (!linkToken) {
-      createLinkToken();
-    } else {
-      create({ token: linkToken });
-    }
-  }, [linkToken]);
-
+    // Fetch link token on mount
+    useEffect(() => {
+      if (!linkToken) {
+        createLinkToken();
+      } else {
+        create({ token: linkToken });
+      }
+    }, [linkToken]);
+  
   // Configure Link Open Props
   const createLinkOpenProps = () => ({
     onSuccess: async (success) => {
@@ -92,13 +93,14 @@ const HomeScreen = ({ navigation }) => {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             public_token: success.publicToken,
-            userId: userId, // ✅ Send userId to store tokens in Firestore
+            userId: userId, // Send userId to store tokens in Firestore
           }),
         });
 
         const data = await response.json();
         if (data.success) {
           setAccessToken(data.access_token);
+          setShowTransactionsButton(true)
           Alert.alert("Success", "Bank Linked Successfully!");
         } else {
           throw new Error("Failed to save access token.");
@@ -127,7 +129,7 @@ const HomeScreen = ({ navigation }) => {
 
   // Fetch Transactions
   const fetchTransactions = async () => {
-    if (!userId || !accessToken) {
+    if (!user?.uid || !accessToken) {
       Alert.alert("Error", "No access token available.");
       return;
     }
@@ -169,6 +171,13 @@ const fetchBalance = async () => {
     console.error("Error fetching balance:", error);
   }
 };
+//refresh when accesstoken is found
+useEffect(() => {
+  if (accessToken) {
+    setShowTransactionsButton(true);
+    fetchStoredAccessToken();
+  }
+}, [accessToken, fetchStoredAccessToken]);
 
   return (
     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
@@ -178,15 +187,18 @@ const fetchBalance = async () => {
       <Text style={{ fontSize: 18, marginBottom: 20 }}>Connect Your Bank Account</Text>
       <Button title="Open Plaid" onPress={handleOpenLink} />
 
-      {accessToken && (
+      {showTransactionsButton && (
         <>
           <Text style={{ marginTop: 20 }}>Fetch Transactions</Text>
           <Button title="Get Transactions" onPress={fetchTransactions} />
         </>
       )}
-      <View style={{marginTop:20}}>
+      {showTransactionsButton && (
+        <>
+      <Text style={{marginTop:20}}>Get Balance</Text>
       <Button title="Get Balance"  onPress={fetchBalance} />
-      </View>
+      </>
+      )}
       {balance && (
         <FlatList
           data={balance}
