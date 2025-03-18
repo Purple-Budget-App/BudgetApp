@@ -33,10 +33,10 @@ const HomeScreen = ({ navigation }) => {
         console.log("✅ Retrieved Access Token from Firestore:", tokenSnap.data().access_token);
         setAccessToken(tokenSnap.data().access_token);
       } else {
-        console.log("❌ No Access Token Found in Firestore");
+        console.log("No Access Token Found in Firestore");
       }
     } catch (error) {
-      console.error("❌ Error fetching stored access token:", error);
+      console.error("Error fetching stored access token:", error);
     }
   }, [userId, db]);
 
@@ -51,10 +51,10 @@ const HomeScreen = ({ navigation }) => {
       const data = await response.json();
       if (!data.link_token) throw new Error("Invalid Plaid Link Token");
 
-      console.log("✅ Link Token:", data.link_token);
+      console.log("Link Token:", data.link_token);
       setLinkToken(data.link_token);
     } catch (error) {
-      console.error("❌ Error fetching Plaid link token:", error);
+      console.error("Error fetching Plaid link token:", error);
       Alert.alert("Error", "Could not fetch Plaid Link Token.");
     }
   }, []);
@@ -76,7 +76,7 @@ const HomeScreen = ({ navigation }) => {
   // Configure Link Open Props
   const createLinkOpenProps = () => ({
     onSuccess: async (success) => {
-      console.log("✅ Plaid Success:", success.publicToken);
+      console.log("Plaid Success:", success.publicToken);
 
       try {
         const response = await fetch(`${address}/exchange_public_token`, {
@@ -96,7 +96,7 @@ const HomeScreen = ({ navigation }) => {
           throw new Error("Failed to save access token.");
         }
       } catch (error) {
-        console.error("❌ Error exchanging public token:", error);
+        console.error("Error exchanging public token:", error);
         Alert.alert("Error", "Could not exchange public token.");
       }
     },
@@ -136,7 +136,7 @@ const HomeScreen = ({ navigation }) => {
       console.log("✅ Transactions Retrieved:", data);
       setTransactions(data);
     } catch (error) {
-      console.error("❌ Error fetching transactions:", error);
+      console.error("Error fetching transactions:", error);
       Alert.alert("Error", "Could not fetch transactions.");
     }
   };

@@ -27,10 +27,10 @@ app.use((req, res, next) => {
 
 // Setup Express Session (Store Access Token Persistently)
 app.use(session({
-  secret: '296989a919115afe69e45bb34534d9',
+  secret: '011521e9ca799ff82ba89e59bf6a16',
   resave: false,
   saveUninitialized: true,
-  cookie: { secure: false }, // Change to `true` in production
+  cookie: { secure: true }, // Change to `true` in production
 }));
 
 // Get today's date and 30 days ago dynamically
@@ -42,7 +42,7 @@ const formatDate = (date) => date.toISOString().split('T')[0]; // YYYY-MM-DD
 // Initialize Plaid Client
 const plaidClient = new PlaidApi(
   new Configuration({
-    basePath: PlaidEnvironments.sandbox, // Change to 'development' or 'production' when live
+    basePath: PlaidEnvironments.production, // Change to 'sandbox' or 'production' as needed
     baseOptions: {
       headers: {
         'PLAID-CLIENT-ID': process.env.PLAID_CLIENT_ID,
@@ -64,10 +64,10 @@ app.post('/create_link_token', async (req, res) => {
       language: 'en',
     });
 
-    console.log("✅ Plaid Link Token Response:", response.data);
+    console.log("Plaid Link Token Response:", response.data);
     res.json(response.data);
   } catch (error) {
-    console.error("❌ Error creating link token:", error.response?.data || error);
+    console.error("Error creating link token:", error.response?.data || error);
     res.status(500).json({ error: 'Failed to create link token' });
   }
 });
@@ -88,10 +88,10 @@ app.post('/exchange_public_token', async (req, res) => {
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
-    console.log(`✅ Access token stored for user ${userId}`);
+    console.log(`Access token stored for user ${userId}`);
     res.json({ success: true, message: 'Access token saved successfully' });
   } catch (error) {
-    console.error("❌ Error exchanging public token:", error.response?.data || error);
+    console.error("Error exchanging public token:", error.response?.data || error);
     res.status(500).json({ error: 'Failed to exchange public token' });
   }
 });
@@ -101,7 +101,7 @@ app.get('/transactions', async (req, res) => {
   try {
     const { userId } = req.query; // Get userId from frontend
 
-    // 🔥 Fetch the stored access token from Firestore
+    // Fetch the stored access token from Firestore
     const doc = await db.collection('plaid_tokens').doc(userId).get();
     if (!doc.exists) {
       return res.status(400).json({ error: 'No access token found for this user.' });
@@ -113,10 +113,10 @@ app.get('/transactions', async (req, res) => {
       access_token: accessToken,
     });
 
-    console.log("✅ Transactions Retrieved:", response.data.transactions);
+    console.log("Transactions Retrieved:", response.data.transactions);
     res.json(response.data.transactions);
   } catch (error) {
-    console.error("❌ Error fetching transactions:", error.response?.data || error);
+    console.error("Error fetching transactions:", error.response?.data || error);
     res.status(500).json({ error: 'Failed to fetch transactions' });
   }
 });
@@ -134,4 +134,4 @@ app.post('/plaid-webhook', async (req, res) => {
 
 // Start Server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
